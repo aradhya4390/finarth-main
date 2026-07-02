@@ -4,6 +4,13 @@ import mongoose from 'mongoose'
 import cors from 'cors'
 import fileAnalysisRoute from './routes/fileAnalysis.js'
 import analyticsRoute from './routes/analytics.js'
+import authRoute from './routes/auth.js'
+import dataRoute from './routes/data.js'
+import exportRoute from './routes/export.js'
+import powerbiRoute from './routes/powerbi.js'
+import aiRoute from './routes/ai.js'
+import aiExtendedRoute from './routes/aiExtended.js'
+import aggregateRoute from './routes/aggregate.js'
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -26,6 +33,15 @@ app.get('/', (req, res) => {
 app.use('/api/analysis', fileAnalysisRoute)
 // analytics dashboard route
 app.use('/api/analytics', analyticsRoute)
+
+// mount auth and app routes
+app.use('/api/auth', authRoute)
+app.use('/api/data', dataRoute)
+app.use('/api/export', exportRoute)
+app.use('/api/powerbi', powerbiRoute)
+app.use('/api/ai', aiRoute)
+app.use('/api/ai-extended', aiExtendedRoute)
+app.use('/api/aggregate', aggregateRoute)
 
 // serve uploads for inspection (optional)
 app.use('/uploads', express.static('uploads'))

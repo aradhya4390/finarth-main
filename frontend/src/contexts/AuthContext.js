@@ -67,10 +67,12 @@ export function AuthProvider({ children }) {
       // Fallback: update localStorage-only users/session
       try {
         const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const current = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        if (!current) throw new Error('No current user');
+        const storedCurrent = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        // current email may be stored in the React session.user or inside localStorage.currentUser depending on flow
+        const currentEmail = session?.user?.email || storedCurrent?.email || storedCurrent?.user?.email;
+        if (!currentEmail) throw new Error('No current user');
 
-        const idx = users.findIndex(u => u.email === current.email);
+        const idx = users.findIndex(u => u.email === currentEmail);
         if (idx === -1) throw new Error('User record not found');
 
         // Merge updates into stored user record (note: stored users use plain password property)
@@ -84,7 +86,9 @@ export function AuthProvider({ children }) {
         setSession(newSession);
         return newSession;
       } catch (err) {
-        throw err;
+        // Re-throw the original API error if local fallback fails so caller gets useful info
+        apiErr.message = apiErr?.body?.message || apiErr?.message || err?.message || 'Failed to update profile';
+        throw apiErr;
       }
     }
   };

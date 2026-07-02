@@ -98,3 +98,47 @@ export async function me(req, res) {
     res.status(500).json({ message: "Failed to fetch profile" });
   }
 }
+
+// POST /api/auth/update-profile (protected)
+export async function updateProfile(req, res) {
+  try {
+    const updates = req.body || {};
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // If email is changing, ensure it's not already taken by another user
+    if (updates.email && updates.email !== user.email) {
+      const other = await User.findOne({ email: updates.email });
+      if (other && String(other._id) !== String(user._id)) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
+      user.email = updates.email;
+    }
+
+    if (updates.name) user.name = updates.name;
+
+    // Support password change: caller sends { password: 'newpass' }
+    if (updates.password) {
+      const hash = await bcrypt.hash(updates.password, 10);
+      user.passwordHash = hash;
+    }
+
+    // Save changes
+    await user.save();
+
+    // Return cleaned user object
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (err) {
+    console.error('Update profile error:', err);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+}

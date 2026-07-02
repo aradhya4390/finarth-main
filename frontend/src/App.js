@@ -3,7 +3,6 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 // Logout icon replaced by lucide-react LogOut; keeping assets import removed
 import './App.css';
 import finarthLogoLight from './assets/finarth-icon.svg';
-import finarthLogoDark from './darklogo.png';
 // The dark sidebar logo can be placed in `public/assets/sidebar logo dark theme.png`.
 // Using a runtime public path avoids compile errors when the file is not present
 // in `src/assets`. If you prefer a static import, put the file into
@@ -1000,7 +999,7 @@ const DataVisualization = ({ receivedEntries = [], givenEntries = [], onGenerate
   </div>
 );
 
-const Settings = ({ darkMode, setDarkMode, currencyCode, setCurrencyCode, currencySymbol }) => {
+const Settings = ({ currencyCode, setCurrencyCode, currencySymbol }) => {
   const { user, updateProfile } = useContext(AuthContext);
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -1028,8 +1027,9 @@ const Settings = ({ darkMode, setDarkMode, currencyCode, setCurrencyCode, curren
       await updateProfile(updates);
       alert('Profile updated');
     } catch (err) {
-      console.error(err);
-      alert('Failed to update profile');
+      console.error('Profile update error:', err);
+      const msg = err?.message || (err?.body && err.body.message) || (err?.response && err.response.data && err.response.data.message) || 'Failed to update profile';
+      alert(msg);
     } finally {
       setSaving(false);
     }
@@ -1061,9 +1061,9 @@ const Settings = ({ darkMode, setDarkMode, currencyCode, setCurrencyCode, curren
   };
 
   const clearAppData = () => {
-    if (!window.confirm('Clear app data (received/given/dark mode)?')) return;
+    if (!window.confirm('Clear app data (received/given/reminders)?')) return;
     try {
-      const keys = Object.keys(localStorage).filter(k => k.startsWith('moneyReceivedEntries_') || k.startsWith('moneyGivenEntries_') || k.includes('darkMode') || k.includes('reminder_'));
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('moneyReceivedEntries_') || k.startsWith('moneyGivenEntries_') || k.includes('reminder_'));
       keys.forEach(k => localStorage.removeItem(k));
       window.location.reload();
     } catch (e) {}
@@ -1073,16 +1073,7 @@ const Settings = ({ darkMode, setDarkMode, currencyCode, setCurrencyCode, curren
   return (
     <div style={componentStyles.container}>
       <h2>⚙️ Settings</h2>
-      <div style={componentStyles.settingItem}>
-        <label>
-          <input
-            type="checkbox"
-            checked={darkMode}
-            onChange={(e) => setDarkMode(e.target.checked)}
-          />
-          Dark Mode
-        </label>
-      </div>
+      {/* Dark Mode option removed - kept layout intact */}
 
       <div style={{ marginTop: 12 }}>
         <div style={{ display: 'grid', gap: 8 }}>
@@ -1150,18 +1141,8 @@ const MainApp = () => {
   const [givenEntries, setGivenEntries] = useState([]);
   const [dailyExpenses, setDailyExpenses] = useState([]);
   const [loans, setLoans] = useState([]);
-  const [darkMode, setDarkMode] = useState(() => {
-    try {
-      const stored = localStorage.getItem('darkMode');
-      return stored ? JSON.parse(stored) : false;
-    } catch (e) {
-      return false;
-    }
-  });
+  // Dark mode removed from the app; UI stays in light/default theme.
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  // Sidebar logo will use the user-provided dark PNG in dark mode; header keeps light logo
-  
 
   const { logout, user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -1331,7 +1312,7 @@ const MainApp = () => {
       case 'data-visualization':
         return <DataVisualization receivedEntries={receivedEntries} givenEntries={givenEntries} dailyExpenses={dailyExpenses} loans={loans} currencySymbol={currencySymbol} />;
       case 'settings':
-        return <Settings darkMode={darkMode} setDarkMode={setDarkMode} currencyCode={currencyCode} setCurrencyCode={setCurrencyCode} currencySymbol={currencySymbol} user={user} />;
+        return <Settings currencyCode={currencyCode} setCurrencyCode={setCurrencyCode} currencySymbol={currencySymbol} />;
       default:
         return <WelcomePage onEnterApp={handleEnterApp} />;
     }
@@ -1341,16 +1322,10 @@ const MainApp = () => {
   // navigated to explicitly through the navigation if desired.
 
   // keep body class in sync so CSS rules using `.dark` or `body.dark-mode` work
-  useEffect(() => {
-    try {
-      // avoid toggling body class so sidebar keeps its original styling;
-      // the app container (`.app-container.dark`) controls scoped dark styles
-      localStorage.setItem('darkMode', JSON.stringify(darkMode));
-    } catch (e) {}
-  }, [darkMode]);
+  // darkMode removed: no localStorage sync required
 
   return (
-    <div className={`app-container ${darkMode ? 'dark' : ''}`} style={{...appStyles.container, ...(darkMode ? appStyles.dark : {}), '--sidebar-width': sidebarOpen ? '280px' : '70px'}}>
+    <div className={`app-container`} style={{...appStyles.container, '--sidebar-width': sidebarOpen ? '280px' : '70px'}}>
 
       {/* Global Header (fixed) */}
       <header className="top-header app-header" style={{ ...appStyles.header }}>
@@ -1388,62 +1363,53 @@ const MainApp = () => {
       </header>
 
   {/* Sidebar */}
-  <div className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`} style={{...appStyles.sidebar}}>
-        <div style={appStyles.sidebarHeader}>
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <div className="sidebar-top" style={{ padding: '1rem 0', display: 'flex', justifyContent: 'center' }}>
-            <img src={darkMode ? finarthLogoDark : finarthLogoLight} alt="Finarth" className="header-logo-img" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'contain' }} />
+  <div className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`} style={{ ...appStyles.sidebar }}>
+    <div className="sidebar-header">
+      <div className="sidebar-profile">
+        {user?.avatar ? (
+          <img src={user.avatar} alt="avatar" className="avatar" />
+        ) : (
+          <div className="avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 20 }}>
+            {user?.name ? user.name.split(' ').map(n => n[0]).slice(0, 2).join('') : 'F'}
           </div>
-
-          <div className="sidebar-main" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="profile-wrap" style={{ display: 'flex', justifyContent: 'center' }}>
-              <div className="sidebar-profile">
-                {user?.avatar ? (
-                  <img src={user.avatar} alt="avatar" className="avatar" />
-                ) : (
-                  <div className="avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 20 }}>
-                    {user?.name ? user.name.split(' ').map(n=>n[0]).slice(0,2).join('') : 'F'}
-                  </div>
-                )}
-                {sidebarOpen && <div className="name">{user?.name || ''}</div>}
-              </div>
-            </div>
-
-            <div style={{ flex: 1 }} />
-          </div>
-        </div>
-        </div>
-
-        <nav style={appStyles.nav}>
-          <div className="nav-list" style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 0' }}>
-            {navigationItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setCurrentPage(item.id)}
-                style={{
-                  ...appStyles.navItem,
-                  ...(currentPage === item.id ? appStyles.navItemActive : {})
-                }}
-              >
-                <span className="nav-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{item.icon}</span>
-                {sidebarOpen && <span className="nav-text">{item.name}</span>}
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        <div className="sidebar-footer" style={{padding: '0.75rem'}}>
-          <button
-            onClick={handleLogout}
-            className={`logout-button ${!sidebarOpen ? 'collapsed' : ''}`}
-            title={!sidebarOpen ? 'Logout' : ''}
-            aria-label="Logout"
-          >
-            <LogOut color="white" size={18} />
-            {sidebarOpen && <span className="logout-text">Logout</span>}
-          </button>
-        </div>
+        )}
+        {sidebarOpen && <div className="name">{user?.name || ''}</div>}
       </div>
+    </div>
+
+    <div className="sidebar-body">
+      <nav className="sidebar-nav" style={appStyles.nav}>
+        <div className="nav-list">
+          {navigationItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setCurrentPage(item.id)}
+              className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
+              style={{
+                ...appStyles.navItem,
+                ...(currentPage === item.id ? appStyles.navItemActive : {})
+              }}
+            >
+              <span className="nav-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{item.icon}</span>
+              {sidebarOpen && <span className="nav-text">{item.name}</span>}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      <div className="sidebar-footer">
+        <button
+          onClick={handleLogout}
+          className={`logout-button ${!sidebarOpen ? 'collapsed' : ''}`}
+          title={!sidebarOpen ? 'Logout' : ''}
+          aria-label="Logout"
+        >
+          <LogOut color="white" size={18} />
+          {sidebarOpen && <span className="logout-text">Logout</span>}
+        </button>
+      </div>
+    </div>
+  </div>
 
       {/* Main Content */}
       <div className="main-content" style={{...appStyles.mainContent, marginTop: 'var(--header-height)'}}>
@@ -1723,19 +1689,9 @@ const appStyles = {
     background: 'var(--sidebar-bg, linear-gradient(180deg, #667eea 0%, #764ba2 100%))',
     color: 'white',
     transition: 'all 0.3s ease',
-    position: 'fixed',
-    height: '100vh',
-    left: 0,
-    top: 0,
     zIndex: 1000,
-    overflowY: 'auto'
-  },
-  sidebarHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '1.5rem',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+    overflowY: 'auto',
+    overflowX: 'hidden'
   },
   logo: {
     display: 'flex',
@@ -1780,9 +1736,8 @@ const appStyles = {
   },
   header: {
     background: 'var(--header-bg)',
-    padding: '1rem 2rem',
+    height: 'var(--header-height)',
     boxShadow: '0 2px 10px rgba(0,0, 0, 0.05)',
-    display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between'
   },
