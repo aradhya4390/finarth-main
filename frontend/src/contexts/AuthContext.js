@@ -160,13 +160,6 @@ export function AuthProvider({ children }) {
     setSession({ token: null, user: null });
   };
 
-  const setAuthSession = (token, user) => {
-    try{
-      localStorage.setItem('currentUser', JSON.stringify({ token }));
-    }catch(e){}
-    setSession({ token, user });
-  }
-
   return (
     <AuthContext.Provider value={{ user: session.user, token: session.token, isAuthenticated: !!session.token, isAuthLoading, signup, login, logout, updateProfile }}>
       {children}

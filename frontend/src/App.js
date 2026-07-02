@@ -129,7 +129,7 @@ const FileUploadAnalysis = ({ onDataExtracted }) => {
             let amt = null;
             for (const v of vals) {
               if (v == null) continue;
-              const s = String(v).replace(/[,\$\s]/g, '');
+              const s = String(v).replace(/[,$\s]/g, '');
               const m = s.match(/-?\d+(?:\.\d+)?/);
               if (m) { amt = Number(m[0]); break; }
             }
